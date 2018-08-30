@@ -1,0 +1,634 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>坦克大战</title>
+  <link rel="stylesheet" type="text/css" href="坦克大战.css">
+</head>
+
+<body>
+  <div class="tankMap">
+  </div>
+    <div class="wrap">
+      <div id="tankMap">
+      </div>
+    </div>
+</body>
+
+<script type="text/javascript">
+
+function random(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+};
+
+/***
+Define map
+***/
+var map = document.getElementById('tankMap');
+var numberOfRows = 99;
+var numberOfColumns = 99;
+var mapWidth = numberOfColumns * 8 + 'px';
+var mapHeight = numberOfRows * 8 + 'px';
+map.style.width = mapWidth;
+map.style.height = mapHeight;
+
+var divPosition = [];
+for ( var i = 0; i < numberOfRows; i++) {
+    var divRow = document.createElement('div');
+    divRow.className = 'row';
+    map.appendChild(divRow);
+    var rowArray = [];
+
+    for ( var j = 0; j < numberOfColumns; j++) {
+        var divColumn = document.createElement('div');
+        divColumn.className = 'col';
+        divRow.appendChild(divColumn);
+        rowArray.push(divColumn);
+    }
+    divPosition.push(rowArray);
+}
+
+var myScore = 0;
+
+/***
+Define show
+***/
+function show(position, type) {
+  divPosition[position[0]][position[1]].className = 'col ' + type;
+}
+
+/***
+Define move
+***/
+function move(position, orientation, type) {
+  show(position, '');
+
+  if (orientation == 'up') {
+    if (position[0] > 0) {
+      position[0] -= 1;
+    }
+  }
+
+  else if (orientation == 'down') {
+    if (position[0] < 98) {
+      position[0] += 1;
+    }
+  }
+
+  else if (orientation == 'left') {
+    if (position[1] > 0) {
+      position[1] -= 1;
+    }
+  }
+
+  else {
+    if (position[1] < 98) {
+      position[1] += 1;
+    }
+  }
+
+  show(position, type);
+}
+
+function invisibleMove(position, orientation) {
+  if (orientation == 'up') {
+    if (position[0] > 0) {
+      position[0] -= 1;
+    }
+  }
+
+  else if (orientation == 'down') {
+    if (position[0] < 98) {
+      position[0] += 1;
+    }
+  }
+
+  else if (orientation == 'left') {
+    if (position[1] > 0) {
+      position[1] -= 1;
+    }
+  }
+
+  else {
+    if (position[1] < 98) {
+      position[1] += 1;
+    }
+  }
+}
+
+function fireSingleBullet(tankPosition, tankOrientation, tankType, bulletSpeed) {
+  if (tankType == 'userTank') {
+    var bulletType = 'userBullet';
+    var armorType = 'userArmor';
+  }
+
+  else {
+    var bulletType = 'systemBullet';
+    var armorType = 'systemArmor';
+  }
+
+  var bulletPosition = tankPosition;
+  var bulletOrientation = tankOrientation;
+  var bulletSpeed = 1000 / bulletSpeed;
+
+  if (bulletOrientation == 'up') {
+    bulletPosition[0] -= 2;
+  }
+
+  else if (bulletOrientation == 'down') {
+    bulletPosition[0] += 2;
+  }
+
+  else if (bulletOrientation == 'left') {
+    bulletPosition[1] -= 2;
+  }
+
+  else {
+    bulletPosition[1] += 2;
+  }
+
+  show(bulletPosition, bulletType);
+
+  function bulletMove() {
+    if (bulletPosition[0] == 0 || bulletPosition[0] == 98 || bulletPosition[1] == 0 || bulletPosition[1] == 98) {
+      clearInterval(checkStatus);
+      clearInterval(bulletMovement);
+      show(bulletPosition, '');
+    }
+
+    else {
+      move(bulletPosition, bulletOrientation, bulletType, bulletSpeed);
+    }
+  }
+
+  function deactivate() {
+    if ((divPosition[bulletPosition[0]][bulletPosition[1]].className != 'col ' + tankType) && (divPosition[bulletPosition[0]][bulletPosition[1]].className != 'col ' + bulletType) && (divPosition[bulletPosition[0]][bulletPosition[1]].className != 'col ' + armorType)) {
+      clearInterval(checkStatus);
+      clearInterval(bulletMovement);
+      show(bulletPosition, '');
+    }
+  }
+
+  var bulletMovement = setInterval(function(){bulletMove()}, bulletSpeed);
+  var checkStatus = setInterval(function(){deactivate()}, 1);
+}
+
+/***
+Define armor
+***/
+function showArmor(lstArmorPositionList, lstArmorLevelList) {
+  var armorPositionList = lstArmorPositionList;
+  var armorLevelList = lstArmorLevelList;
+
+  for (var i = 0; i < armorPositionList.length; i++) {
+    if (armorLevelList[i] > 0) {
+      show(armorPositionList[i], 'userArmor' + armorLevelList[i]);
+    }
+  }
+}
+
+function initializeArmor(lstTankPosition, lstArmorPositionList, lstArmorLevelList) {
+  var tankPosition = lstTankPosition;
+  var armorPositionList = lstArmorPositionList;
+  var armorLevelList = lstArmorLevelList;
+
+  armorPositionList.push([tankPosition[0] - 1, tankPosition[1] - 1]);
+  armorPositionList.push([tankPosition[0] - 1, tankPosition[1] + 1]);
+  armorPositionList.push([tankPosition[0] + 1, tankPosition[1] - 1]);
+  armorPositionList.push([tankPosition[0] + 1, tankPosition[1] + 1]);
+  armorPositionList.push([tankPosition[0] - 1, tankPosition[1]]);
+  armorPositionList.push([tankPosition[0], tankPosition[1] - 1]);
+  armorPositionList.push([tankPosition[0] + 1, tankPosition[1]]);
+  armorPositionList.push([tankPosition[0], tankPosition[1] + 1]);
+
+  for (var i = 0; i < armorPositionList.length; i++) {
+    armorLevelList.push(0);
+  }
+}
+
+function allArmorLevelUp(lstArmorLevelList) {
+  var armorLevelList = lstArmorLevelList;
+
+  for (var i = 0; i < armorLevelList.length; i++) {
+    if (armorLevelList[i] < 5) {
+      armorLevelList[i]++;
+    }
+  }
+}
+
+function armorMove(strOrientation, lstArmorPositionList, lstArmorLevelList) {
+  var orientation = strOrientation;
+  var armorPositionList = lstArmorPositionList;
+  var armorLevelList = lstArmorLevelList;
+
+  for (var i = 0; i < armorPositionList.length; i++) {
+    if (armorLevelList[i] > 0) {
+      move(armorPositionList[i], orientation, 'userArmor' + armorLevelList[i]);
+    }
+    
+    else {
+      invisibleMove(armorPositionList[i], orientation);
+    }
+  }
+}
+
+function armorOnHit(lstArmorPositionList, lstArmorLevelList) {
+  var armorPositionList = lstArmorPositionList;
+  var armorLevelList = lstArmorLevelList;
+
+  for (var i = 0; i < armorPositionList.length; i++) {
+    var currentPosition = armorPositionList[i];
+    if (divPosition[currentPosition[0]][currentPosition[1]].className == 'col systemBullet') {
+      if (lstArmorLevelList[i] > 1) {
+        lstArmorLevelList[i] -= 1;
+      }
+
+      else {
+        show(currentPosition, '');
+      }
+    }
+  }
+}
+
+/***
+Define tank
+***/
+class Tank {
+  constructor(position, orientation, tankType, bulletType, armorPositionList, armorLevelList, bulletSpeed, bulletCount) {
+    this._position = position;
+    this._orientation = orientation;
+    this._tankType = tankType;
+    this._bulletType = bulletType;
+    this._armorPositionList = armorPositionList;
+    this._armorLevelList = armorLevelList;
+    this._bulletSpeed = bulletSpeed;
+    this._bulletCount = bulletCount;
+  }
+
+  showTank() {
+    show(this._position, this._tankType);
+  }
+
+  tankMove() {
+    armorMove(this._orientation, this._armorPositionList, this._armorLevelList);
+    move(this._position, this._orientation, this._tankType);
+    showArmor(this._armorPositionList, this._armorLevelList);
+    show(this._position, this._tankType);
+  }
+
+  fire() {
+    if (this._bulletType == 'regular') {
+      fireMultipleBullet(this._position.slice(), this._orientation, this._tankType, this._bulletSpeed, this._bulletCount);
+    }
+
+    else if (this._bulletType == 'wave1') {
+      fireWaveBullet1(this._position.slice(), this._orientation, this._tankType, this._bulletSpeed, this._bulletCount);
+    }
+
+    else if (this._bulletType == 'wave2') {
+      fireWaveBullet2(this._position.slice(), this._orientation, this._tankType, this._bulletSpeed, this._bulletCount);
+    }
+
+    else if (this._bulletType == 'deathLaser') {
+      fireDeathLaser(this._position.slice(), this._orientation, this._tankType, this._bulletCount);
+    }
+  }
+}
+
+/***
+userTank: (position, orientation, tankType, bulletType, armorPositionList, armorLevelList, bulletSpeed, bulletCount)
+***/
+const userTank = new Tank([50, 50], 'up', 'userTank', 'regular', [], [], 1, 2);
+userTank.showTank();
+initializeArmor(userTank._position, userTank._armorPositionList, userTank._armorLevelList);
+showArmor(userTank._armorPositionList, userTank._armorLevelList);
+
+function CreateSystemTank(bulletType, armorPositionList, armorLevelList, bulletSpeed, bulletCount, movementFrequency) {
+  var randomY = random(0, numberOfRows - 1);
+  var randomX = random(0, numberOfColumns - 1);
+  var tankPosition = [randomY, randomX];
+  var orientations = ['up', 'down', 'left', 'right'];
+  var tankOrientation = orientations[random(0, orientations.length - 1)];
+
+  const systemTank = new Tank(tankPosition, tankOrientation, 'systemTank', bulletType, [], [], bulletSpeed, bulletCount);
+  systemTank.showTank();
+
+  function tankAction() {
+    var randomOrientation = orientations[random(0, orientations.length - 1)];
+    move(tankPosition, randomOrientation, 'systemTank');
+    systemTank._orientation = randomOrientation;
+    systemTank.fire();
+  }
+
+  function deactivate() {
+    if (divPosition[systemTank._position[0]][systemTank._position[1]].className == 'col userBullet') {
+      clearInterval(checkStatus);
+      clearInterval(tankMovement);
+      show(tankPosition, '');
+    }
+  }
+
+  var tankMovement = setInterval(function(){tankAction()}, movementFrequency);
+  var checkStatus = setInterval(function(){deactivate()}, 10);
+}
+
+/***
+Define upgrade
+***/
+function CreateUpgrade(upgradeType) {
+  var randomY = random(1, numberOfRows - 2);
+  var randomX = random(1, numberOfColumns - 2);
+
+  show([randomY, randomX], upgradeType);
+
+  function CheckUpgrade() {
+    if (randomY == userTank._position[0] && randomX == userTank._position[1]) {
+      if (upgradeType == 'armorUpgrade') {
+        allArmorLevelUp(userTank._armorLevelList);
+        showArmor(userTank._armorPositionList, userTank._armorLevelList);
+      }
+
+      else if (upgradeType == 'bulletSpeedUpgrade') {
+        userTank._bulletSpeed += 1;
+      }
+
+      else {
+        userTank._bulletCount += 1;
+      }
+
+      clearInterval(upgradeCheck);
+    }
+  }
+
+  var upgradeCheck = setInterval(function(){CheckUpgrade()}, 10);
+}
+
+var createArmorUpgrade = setInterval(function(){CreateUpgrade('armorUpgrade')}, 2000);
+var createBulletSpeedUpgrade = setInterval(function(){CreateUpgrade('bulletSpeedUpgrade')}, 20000);
+var createBulletCountUpgrade = setInterval(function(){CreateUpgrade('bulletCountUpgrade')}, 30000);
+
+var fireOnCD = false;
+function readyToFire() {
+  fireOnCD = false;
+}
+
+document.onkeydown = function(event) {
+  event = event || window.event;
+
+  switch (event.keyCode) {
+    case 32:
+      if (!fireOnCD) {
+        userTank.fire();
+        fireOnCD = true;
+        fireCD = setTimeout(function(){readyToFire()}, 1000);
+      }
+      break;
+
+    case 37:
+      if (userTank._position[1] > 1) {
+        userTank._orientation = 'left';
+        userTank.tankMove();
+      }
+      break;
+
+    case 38:
+      if (userTank._position[0] > 1) {
+        userTank._orientation = 'up';
+        userTank.tankMove();
+      }
+      break;
+
+    case 39:
+      if (userTank._position[1] < 97) {
+        userTank._orientation = 'right';
+        userTank.tankMove();
+      }
+      break;
+
+    case 40:
+      if (userTank._position[0] < 97) {
+        userTank._orientation = 'down';
+        userTank.tankMove();
+      }
+      break;
+  }
+};
+
+/***
+systemTank: (bulletType, armorPositionList, armorLevelList, bulletSpeed, bulletCount, movementFrequency)
+***/
+CreateSystemTank('regular', [], [], 10, 2, 1000);
+
+/***
+Define different kinds of bullets
+***/
+function fireMultipleBullet(tankPosition, tankOrientation, tankType, bulletSpeed, bulletCount) {
+  var bulletCenterPosition = tankPosition;
+  var bulletOrientation = tankOrientation;
+  var bulletSpeed = bulletSpeed;
+  var bulletCount = bulletCount;
+
+  if (bulletCount == 1) {
+    fireSingleBullet(bulletCenterPosition, bulletOrientation, tankType, bulletSpeed);
+  }
+
+  else if (bulletCount % 2 == 0) {
+    for (var i = 0; i < bulletCount / 2; i++) {
+      var positionModifier = 1 + (i * 2);
+
+      if (bulletOrientation == 'up' || bulletOrientation == 'down') {
+        var bullet1Position = [bulletCenterPosition[0], bulletCenterPosition[1] - positionModifier];
+        var bullet2Position = [bulletCenterPosition[0], bulletCenterPosition[1] + positionModifier];
+      }
+
+      else {
+        var bullet1Position = [bulletCenterPosition[0] - positionModifier, bulletCenterPosition[1]];
+        var bullet2Position = [bulletCenterPosition[0] + positionModifier, bulletCenterPosition[1]];
+      }
+
+      fireSingleBullet(bullet1Position, bulletOrientation, tankType, bulletSpeed);
+      fireSingleBullet(bullet2Position, bulletOrientation, tankType, bulletSpeed);
+    }
+  }
+
+  else {
+    for (var i = 0; i < bulletCount / 2; i++) {
+      var positionModifier = i * 2;
+
+      if (bulletOrientation == 'up' || bulletOrientation == 'down') {
+        var bullet1Position = [bulletCenterPosition[0], bulletCenterPosition[1] - positionModifier];
+        var bullet2Position = [bulletCenterPosition[0], bulletCenterPosition[1] + positionModifier];
+      }
+
+      else {
+        var bullet1Position = [bulletCenterPosition[0] - positionModifier, bulletCenterPosition[1]];
+        var bullet2Position = [bulletCenterPosition[0] + positionModifier, bulletCenterPosition[1]];
+      }
+
+      fireSingleBullet(bullet1Position, bulletOrientation, tankType, bulletSpeed);
+      fireSingleBullet(bullet2Position, bulletOrientation, tankType, bulletSpeed);
+    }
+
+    fireSingleBullet(bulletCenterPosition, bulletOrientation, tankType, bulletSpeed);
+  }
+}
+
+function fireWaveBullet1(tankPosition, tankOrientation, tankType, bulletSpeed, bulletCount) {
+  var bulletCenterPosition = tankPosition;
+  var bulletOrientation = tankOrientation;
+
+  for (var i = bulletCount - 1; i >= 2; i--) {
+    if ((i % 2) == 0) {
+      var positionModifier = i / 2;
+
+      if (bulletOrientation == 'up' || bulletOrientation == 'down') {
+        var bullet1Position = [bulletCenterPosition[0], bulletCenterPosition[1] - positionModifier];
+        var bullet2Position = [bulletCenterPosition[0], bulletCenterPosition[1] + positionModifier];
+      }
+
+      else {
+        var bullet1Position = [bulletCenterPosition[0] - positionModifier, bulletCenterPosition[1]];
+        var bullet2Position = [bulletCenterPosition[0] + positionModifier, bulletCenterPosition[1]];
+      }
+    }
+
+    else {
+      var positionModifier = (i - 1) / 2;
+
+      if (bulletOrientation == 'up' || bulletOrientation == 'down') {
+        if (bulletOrientation == 'up') {
+          bulletCenterPosition[0] -= positionModifier;
+        }
+
+        else {
+          bulletCenterPosition[0] += positionModifier;
+        }
+
+        var bullet1Position = [bulletCenterPosition[0] - positionModifier, bulletCenterPosition[1]];
+        var bullet2Position = [bulletCenterPosition[0] + positionModifier, bulletCenterPosition[1]];
+      }
+
+      else {
+        if (bulletOrientation == 'left') {
+          bulletCenterPosition[1] -= positionModifier;
+        }
+
+        else {
+          bulletCenterPosition[1] += positionModifier;
+        }
+
+        var bullet1Position = [bulletCenterPosition[0], bulletCenterPosition[1] - positionModifier];
+        var bullet2Position = [bulletCenterPosition[0], bulletCenterPosition[1] + positionModifier];
+      }
+    }
+
+    fireSingleBullet(bullet1Position, bulletOrientation, tankType, bulletSpeed * i / 10);
+    fireSingleBullet(bullet2Position, bulletOrientation, tankType, bulletSpeed * i / 10);
+  }
+
+  fireSingleBullet(bulletCenterPosition, bulletOrientation, tankType, bulletSpeed);
+}
+
+function fireWaveBullet2(tankPosition, tankOrientation, tankType, bulletSpeed, bulletCount) {
+  var bulletCenterPosition = tankPosition;
+  var bulletOrientation = tankOrientation;
+
+  for (var i = 2; i < bulletCount; i++) {
+    if ((i % 2) == 0) {
+      var positionModifier = i / 2;
+
+      if (bulletOrientation == 'up' || bulletOrientation == 'down') {
+        var bullet1Position = [bulletCenterPosition[0], bulletCenterPosition[1] - positionModifier];
+        var bullet2Position = [bulletCenterPosition[0], bulletCenterPosition[1] + positionModifier];
+      }
+
+      else {
+        var bullet1Position = [bulletCenterPosition[0] - positionModifier, bulletCenterPosition[1]];
+        var bullet2Position = [bulletCenterPosition[0] + positionModifier, bulletCenterPosition[1]];
+      }
+    }
+
+    else {
+      var positionModifier = (i - 1) / 2;
+
+      if (bulletOrientation == 'up' || bulletOrientation == 'down') {
+        if (bulletOrientation == 'up') {
+          bulletCenterPosition[0] -= positionModifier;
+        }
+
+        else {
+          bulletCenterPosition[0] += positionModifier;
+        }
+
+        var bullet1Position = [bulletCenterPosition[0] - positionModifier, bulletCenterPosition[1]];
+        var bullet2Position = [bulletCenterPosition[0] + positionModifier, bulletCenterPosition[1]];
+      }
+
+      else {
+        if (bulletOrientation == 'left') {
+          bulletCenterPosition[1] -= positionModifier;
+        }
+
+        else {
+          bulletCenterPosition[1] += positionModifier;
+        }
+
+        var bullet1Position = [bulletCenterPosition[0], bulletCenterPosition[1] - positionModifier];
+        var bullet2Position = [bulletCenterPosition[0], bulletCenterPosition[1] + positionModifier];
+      }
+    }
+
+    fireSingleBullet(bullet1Position, bulletOrientation, tankType, bulletSpeed * i);
+    fireSingleBullet(bullet2Position, bulletOrientation, tankType, bulletSpeed * i);
+  }
+
+  fireSingleBullet(bulletCenterPosition, bulletOrientation, tankType, bulletSpeed);
+}
+
+function fireDeathLaser(tankPosition, tankOrientation, tankType, laserWidth) {
+  var laserStartPosition = tankPosition;
+  var laserOrientation = tankOrientation;
+
+  if (laserOrientation == 'up') {
+    for (var i = laserStartPosition[0]; i > 0; i -= 2) {
+      currentPosition = [i, laserStartPosition[1]];
+      fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth);
+      if (laserWidth > 1) {
+        fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth - 1);
+      }
+    }
+  }
+
+  else if (laserOrientation == 'down') {
+    for (var i = laserStartPosition[0]; i < 98; i += 2) {
+      currentPosition = [i, laserStartPosition[1]];
+      fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth);
+      if (laserWidth > 1) {
+        fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth - 1);
+      }
+    }
+  }
+
+  else if (laserOrientation == 'left') {
+    for (var i = laserStartPosition[1]; i > 0; i -= 2) {
+      currentPosition = [laserStartPosition[0], i];
+      fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth);
+      if (laserWidth > 1) {
+        fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth - 1);
+      }
+    }
+  }
+
+  else {
+    for (var i = laserStartPosition[1]; i < 98; i += 2) {
+      currentPosition = [laserStartPosition[0], i];
+      fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth);
+      if (laserWidth > 1) {
+        fireMultipleBullet(currentPosition, laserOrientation, tankType, 1000, laserWidth - 1);
+      }
+    }
+  }
+}
+
+</script>
+</html>

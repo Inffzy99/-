@@ -1,0 +1,82 @@
+#tankMap {
+  margin: 0 auto;
+  border: 1px solid skyblue;
+}
+
+.userTank {
+  background: rgb(0, 255, 255);
+}
+
+.userArmor1 {
+  background: rgb(102, 178, 255);
+}
+
+.userArmor2 {
+  background: rgb(51, 153, 255);
+}
+
+.userArmor3 {
+  background: rgb(0, 128, 255);
+}
+
+.userArmor4 {
+  background: rgb(0, 102, 204);
+}
+
+.userArmor5 {
+  background: rgb(0, 76, 153);
+}
+
+.userBullet {
+  background: rgb(0, 0, 255);
+  z-index: 10;
+}
+
+
+
+.systemTank {
+  background: rgb(255, 0, 0);
+}
+
+.systemBullet {
+  background: rgb(100, 0, 0);
+}
+
+.systemArmor {
+  background: rgb(0, 0, 0);
+}
+
+.armorUpgrade {
+  background: rgb(0, 100, 0);
+}
+
+.bulletSpeedUpgrade {
+  background: rgb(255, 128, 0);
+}
+
+.bulletCountUpgrade {
+  background: rgb(128, 0, 255);
+}
+
+.levelOne {
+  height: 8px;
+  width: 8px;
+}
+
+.row {
+    height: 8px;
+}
+
+.col {
+    height: 8px;
+    width: 8px;
+    box-sizing: border-box;
+    border: 1px solid white;
+    float: left;
+}
+
+.wrap {
+  width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
